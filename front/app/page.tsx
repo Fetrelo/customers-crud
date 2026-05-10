@@ -31,6 +31,10 @@ export default function Home() {
   const [perPage, setPerPage] = useState(10);
   const [sortCol, setSortCol] = useState("CompanyName");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [companySearch, setCompanySearch] = useState("");
+  const [companyFilter, setCompanyFilter] = useState<string | undefined>(
+    undefined,
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<Customer>(() => emptyCustomer());
@@ -38,6 +42,18 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      const t = companySearch.trim();
+      setCompanyFilter([...t].length >= 3 ? t : undefined);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [companySearch]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [companyFilter]);
 
   const load = useCallback(async () => {
     setError(null);
@@ -48,6 +64,7 @@ export default function Home() {
         perPage,
         sort: sortCol,
         dir: sortDir,
+        company: companyFilter,
       });
       setCustomers(data.customers ?? []);
       setTotal(data.total ?? 0);
@@ -56,7 +73,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [page, perPage, sortCol, sortDir]);
+  }, [page, perPage, sortCol, sortDir, companyFilter]);
 
   useEffect(() => {
     void load();
@@ -276,6 +293,29 @@ export default function Home() {
           </button>
         </div>
         <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 py-3 text-sm dark:border-zinc-800 md:flex-row md:flex-wrap md:items-end md:gap-4">
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-zinc-700 dark:text-zinc-300 md:max-w-md">
+            <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Filter by company
+            </span>
+            <input
+              type="search"
+              className={inputCls}
+              value={companySearch}
+              onChange={(e) => setCompanySearch(e.target.value)}
+              placeholder="Type at least 3 characters…"
+              autoComplete="off"
+              aria-describedby="company-filter-hint"
+            />
+            {companySearch.trim().length > 0 &&
+              [...companySearch.trim()].length < 3 && (
+                <span
+                  id="company-filter-hint"
+                  className="text-xs text-zinc-500 dark:text-zinc-400"
+                >
+                  Enter at least 3 characters to filter the list.
+                </span>
+              )}
+          </label>
           <label className="flex flex-col gap-1 text-zinc-700 dark:text-zinc-300">
             <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Page size

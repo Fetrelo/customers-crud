@@ -27,6 +27,8 @@ export type CustomersListQuery = {
   perPage?: number;
   sort?: string;
   dir?: "asc" | "desc";
+  /** Substring filter on CompanyName; backend applies only when length is at least 3. */
+  company?: string;
 };
 
 export function emptyCustomer(): Customer {

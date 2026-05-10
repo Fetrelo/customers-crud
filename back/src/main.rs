@@ -81,6 +81,18 @@ type DbState = Arc<Mutex<Connection>>;
 const DEFAULT_PAGE: i64 = 1;
 const DEFAULT_PER_PAGE: i64 = 10;
 const MAX_PER_PAGE: i64 = 200;
+/// Max characters accepted for the company name filter query param.
+const MAX_COMPANY_FILTER_LEN: usize = 200;
+
+/// Returns `Some(needle)` only when the filter has at least 3 Unicode scalars (trimmed).
+fn normalize_company_filter(raw: &Option<String>) -> Option<String> {
+    let s = raw.as_ref()?.trim();
+    let trimmed: String = s.chars().take(MAX_COMPANY_FILTER_LEN).collect();
+    if trimmed.chars().count() < 3 {
+        return None;
+    }
+    Some(trimmed)
+}
 
 #[derive(Debug, Serialize)]
 pub struct PaginatedCustomers {
@@ -123,13 +135,14 @@ fn resolve_sort_dir(raw: Option<&String>) -> Result<&'static str, ()> {
     }
 }
 
-#[get("/customers?<page>&<per_page>&<sort>&<dir>")]
+#[get("/customers?<page>&<per_page>&<sort>&<dir>&<company>")]
 fn get_customers(
     db: &State<DbState>,
     page: Option<i64>,
     per_page: Option<i64>,
     sort: Option<String>,
     dir: Option<String>,
+    company: Option<String>,
 ) -> Result<Json<PaginatedCustomers>, Status> {
     let page = page.unwrap_or(DEFAULT_PAGE).max(1);
     let per_page = per_page
@@ -144,26 +157,56 @@ fn get_customers(
 
     let offset = (page - 1).saturating_mul(per_page);
 
+    let company_filter = normalize_company_filter(&company);
+
     let conn = db.lock().map_err(|_| Status::InternalServerError)?;
 
-    let total: i64 = conn
-        .query_row("SELECT COUNT(*) FROM Customers", [], |row| row.get(0))
-        .map_err(|_| Status::InternalServerError)?;
+    const SELECT_FROM: &str = "SELECT CustomerID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax FROM Customers";
 
-    let sql = format!(
-        "SELECT CustomerID, CompanyName, ContactName, ContactTitle, Address, City, Region, PostalCode, Country, Phone, Fax \
-         FROM Customers ORDER BY {} {} LIMIT ? OFFSET ?",
-        sort_col, sort_dir
-    );
-
-    let mut stmt = conn.prepare(&sql).map_err(|_| Status::InternalServerError)?;
-    let rows = stmt
-        .query_map(params![per_page, offset], Customer::from_row)
-        .map_err(|_| Status::InternalServerError)?;
-    let mut out = Vec::new();
-    for row in rows {
-        out.push(row.map_err(|_| Status::InternalServerError)?);
-    }
+    let (total, out) = match &company_filter {
+        None => {
+            let total: i64 = conn
+                .query_row("SELECT COUNT(*) FROM Customers", [], |row| row.get(0))
+                .map_err(|_| Status::InternalServerError)?;
+            let sql = format!(
+                "{SELECT_FROM} ORDER BY {} {} LIMIT ? OFFSET ?",
+                sort_col, sort_dir
+            );
+            let mut stmt = conn.prepare(&sql).map_err(|_| Status::InternalServerError)?;
+            let rows = stmt
+                .query_map(params![per_page, offset], Customer::from_row)
+                .map_err(|_| Status::InternalServerError)?;
+            let mut out = Vec::new();
+            for row in rows {
+                out.push(row.map_err(|_| Status::InternalServerError)?);
+            }
+            (total, out)
+        }
+        Some(needle) => {
+            let where_instr =
+                "instr(lower(COALESCE(CompanyName, '')), lower(?)) > 0";
+            let total: i64 = conn
+                .query_row(
+                    &format!("SELECT COUNT(*) FROM Customers WHERE {where_instr}"),
+                    params![needle],
+                    |row| row.get(0),
+                )
+                .map_err(|_| Status::InternalServerError)?;
+            let sql = format!(
+                "{SELECT_FROM} WHERE {where_instr} ORDER BY {} {} LIMIT ? OFFSET ?",
+                sort_col, sort_dir
+            );
+            let mut stmt = conn.prepare(&sql).map_err(|_| Status::InternalServerError)?;
+            let rows = stmt
+                .query_map(params![needle, per_page, offset], Customer::from_row)
+                .map_err(|_| Status::InternalServerError)?;
+            let mut out = Vec::new();
+            for row in rows {
+                out.push(row.map_err(|_| Status::InternalServerError)?);
+            }
+            (total, out)
+        }
+    };
 
     Ok(Json(PaginatedCustomers {
         customers: out,

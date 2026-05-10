@@ -48,6 +48,12 @@ export async function fetchCustomers(
   if (query.perPage != null) p.set("per_page", String(query.perPage));
   if (query.sort != null && query.sort !== "") p.set("sort", query.sort);
   if (query.dir != null) p.set("dir", query.dir);
+  if (query.company != null && query.company.trim() !== "") {
+    const t = query.company.trim();
+    if ([...t].length >= 3) {
+      p.set("company", t);
+    }
+  }
   const qs = p.toString();
   const url = `${apiBase()}/customers${qs ? `?${qs}` : ""}`;
   const res = await fetch(url, { cache: "no-store" });
