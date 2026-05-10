@@ -1,0 +1,5 @@
+# Run `cargo run` from this directory so `Connection::open("northwind.db")` resolves.
+# `northwind.db` is typically a symlink to ../../northwind.db.
+[default]
+address = "127.0.0.1"
+port = 8001

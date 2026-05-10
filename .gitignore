@@ -1,0 +1,5 @@
+# Rust (local target dir; see back/.cargo/config.toml)
+back/target/
+
+# Editor / OS
+.DS_Store
