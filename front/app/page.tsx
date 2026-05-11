@@ -39,6 +39,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<Customer>(() => emptyCustomer());
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [formVisible, setFormVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
@@ -95,6 +96,7 @@ export default function Home() {
       }
       setForm(emptyCustomer());
       setEditingId(null);
+      setFormVisible(false);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed");
@@ -111,6 +113,7 @@ export default function Home() {
       if (editingId === id) {
         setEditingId(null);
         setForm(emptyCustomer());
+        setFormVisible(false);
       }
       await load();
     } catch (err) {
@@ -118,8 +121,15 @@ export default function Home() {
     }
   }
 
+  function openCreateForm() {
+    setEditingId(null);
+    setForm(emptyCustomer());
+    setFormVisible(true);
+  }
+
   function onEdit(c: Customer) {
     setEditingId(c.CustomerID);
+    setFormVisible(true);
     setForm({
       CustomerID: c.CustomerID,
       CompanyName: c.CompanyName ?? "",
@@ -135,9 +145,10 @@ export default function Home() {
     });
   }
 
-  function onCancelEdit() {
+  function closeForm() {
     setEditingId(null);
     setForm(emptyCustomer());
+    setFormVisible(false);
   }
 
   const inputCls =
@@ -163,134 +174,28 @@ export default function Home() {
         </div>
       )}
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <h2 className="mb-4 text-lg font-medium text-zinc-900 dark:text-zinc-50">
-          {editingId ? `Edit customer (${editingId})` : "Create customer"}
-        </h2>
-        <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Customer ID *
-            <input
-              className={inputCls}
-              required
-              disabled={!!editingId}
-              value={form.CustomerID}
-              onChange={(e) => field("CustomerID", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Company name
-            <input
-              className={inputCls}
-              value={form.CompanyName ?? ""}
-              onChange={(e) => field("CompanyName", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Contact name
-            <input
-              className={inputCls}
-              value={form.ContactName ?? ""}
-              onChange={(e) => field("ContactName", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Contact title
-            <input
-              className={inputCls}
-              value={form.ContactTitle ?? ""}
-              onChange={(e) => field("ContactTitle", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 sm:col-span-2">
-            Address
-            <input
-              className={inputCls}
-              value={form.Address ?? ""}
-              onChange={(e) => field("Address", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            City
-            <input
-              className={inputCls}
-              value={form.City ?? ""}
-              onChange={(e) => field("City", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Region
-            <input
-              className={inputCls}
-              value={form.Region ?? ""}
-              onChange={(e) => field("Region", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Postal code
-            <input
-              className={inputCls}
-              value={form.PostalCode ?? ""}
-              onChange={(e) => field("PostalCode", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Country
-            <input
-              className={inputCls}
-              value={form.Country ?? ""}
-              onChange={(e) => field("Country", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Phone
-            <input
-              className={inputCls}
-              value={form.Phone ?? ""}
-              onChange={(e) => field("Phone", e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            Fax
-            <input
-              className={inputCls}
-              value={form.Fax ?? ""}
-              onChange={(e) => field("Fax", e.target.value)}
-            />
-          </label>
-          <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-            >
-              {saving ? "Saving…" : editingId ? "Update" : "Create"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={onCancelEdit}
-                className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
-              >
-                Cancel edit
-              </button>
-            )}
-          </div>
-        </form>
-      </section>
-
+      {!formVisible && (
       <section className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="flex flex-col gap-3 border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
-            All customers
+            Customers
           </h2>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="self-start rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900 sm:self-auto"
-          >
-            Refresh
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={openCreateForm}
+              className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            >
+              Add customer
+            </button>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-3 border-b border-zinc-100 px-4 py-3 text-sm dark:border-zinc-800 md:flex-row md:flex-wrap md:items-end md:gap-4">
           <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-zinc-700 dark:text-zinc-300 md:max-w-md">
@@ -433,7 +338,7 @@ export default function Home() {
                   <tr
                     key={c.CustomerID}
                     className={
-                      editingId === c.CustomerID
+                      formVisible && editingId === c.CustomerID
                         ? "bg-zinc-100/80 dark:bg-zinc-900/80"
                         : ""
                     }
@@ -482,6 +387,132 @@ export default function Home() {
           <p className="px-4 py-8 text-sm text-zinc-500">No customers found.</p>
         )}
       </section>
+      )}
+
+      {formVisible && (
+        <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-medium text-zinc-900 dark:text-zinc-50">
+              {editingId ? `Edit customer (${editingId})` : "New customer"}
+            </h2>
+            <button
+              type="button"
+              onClick={closeForm}
+              className="text-sm font-medium text-zinc-600 underline hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+            >
+              Close
+            </button>
+          </div>
+          <form onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Customer ID *
+              <input
+                className={inputCls}
+                required
+                disabled={!!editingId}
+                value={form.CustomerID}
+                onChange={(e) => field("CustomerID", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Company name
+              <input
+                className={inputCls}
+                value={form.CompanyName ?? ""}
+                onChange={(e) => field("CompanyName", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Contact name
+              <input
+                className={inputCls}
+                value={form.ContactName ?? ""}
+                onChange={(e) => field("ContactName", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Contact title
+              <input
+                className={inputCls}
+                value={form.ContactTitle ?? ""}
+                onChange={(e) => field("ContactTitle", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 sm:col-span-2">
+              Address
+              <input
+                className={inputCls}
+                value={form.Address ?? ""}
+                onChange={(e) => field("Address", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              City
+              <input
+                className={inputCls}
+                value={form.City ?? ""}
+                onChange={(e) => field("City", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Region
+              <input
+                className={inputCls}
+                value={form.Region ?? ""}
+                onChange={(e) => field("Region", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Postal code
+              <input
+                className={inputCls}
+                value={form.PostalCode ?? ""}
+                onChange={(e) => field("PostalCode", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Country
+              <input
+                className={inputCls}
+                value={form.Country ?? ""}
+                onChange={(e) => field("Country", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Phone
+              <input
+                className={inputCls}
+                value={form.Phone ?? ""}
+                onChange={(e) => field("Phone", e.target.value)}
+              />
+            </label>
+            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Fax
+              <input
+                className={inputCls}
+                value={form.Fax ?? ""}
+                onChange={(e) => field("Fax", e.target.value)}
+              />
+            </label>
+            <div className="flex flex-wrap items-end gap-2 sm:col-span-2 lg:col-span-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+              >
+                {saving ? "Saving…" : editingId ? "Update" : "Create"}
+              </button>
+              <button
+                type="button"
+                onClick={closeForm}
+                className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
     </div>
   );
 }
