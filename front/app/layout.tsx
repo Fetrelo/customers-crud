@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Customers CRUD",
-  description: "Northwind customers via Next.js and Rocket",
+  title: "Northwind CRUD",
+  description: "Northwind Customers and Employees via Next.js and Rocket",
 };
 
 export default function RootLayout({
