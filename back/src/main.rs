@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate rocket;
 
+mod employees;
+
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::serde::json::Json;
 use rocket::{Request, Response, State};
@@ -76,7 +78,7 @@ impl Fairing for Cors {
     }
 }
 
-type DbState = Arc<Mutex<Connection>>;
+pub type DbState = Arc<Mutex<Connection>>;
 
 const DEFAULT_PAGE: i64 = 1;
 const DEFAULT_PER_PAGE: i64 = 10;
@@ -340,6 +342,13 @@ fn rocket() -> _ {
                 delete_customer,
                 options_customers,
                 options_customer,
+                employees::get_employees,
+                employees::get_employee,
+                employees::create_employee,
+                employees::update_employee,
+                employees::delete_employee,
+                employees::options_employees,
+                employees::options_employee,
             ],
         )
 }
